@@ -1,53 +1,17 @@
-name: Build Debug APK
+- name: Create GitHub Release
+  uses: actions/create-release@v1
+  env:
+    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  with:
+    tag_name: v1.0.0  # Use a dynamic version if needed
+    release_name: "Version 1.0.0"
+    draft: false
+    prerelease: false
 
-on:
-  push:
-    branches:
-      - master  # Trigger this workflow only on changes to the 'master' branch
-  pull_request:
-    branches:
-      - master
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      # Step 1: Checkout the repository
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      # Step 2: Set up JDK for Gradle
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: 17
-          distribution: 'zulu'
-
-      # Step 3: Cache Gradle dependencies
-      - name: Cache Gradle dependencies
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-
-
-      # Step 4: Build the debug APK
-      - name: Build debug APK
-        run: ./gradlew assembleDebug
-
-      # Step 5: Rename APK to include version name
-      - name: Rename APK
-        run: |
-          VERSION=$(grep "versionName" app/build.gradle | awk '{print $2}' | tr -d '"')
-          mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/attendance_app_${VERSION}.apk
-
-      # Step 6: Upload the renamed APK as an artifact
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: attendance_app_apk
-          path: app/build/outputs/apk/debug/attendance_app_*.apk
+- name: Upload APK to Release
+  uses: actions/upload-release-asset@v1
+  with:
+    upload_url: ${{ steps.create-release.outputs.upload_url }}
+    asset_path: app/build/outputs/apk/debug/attendance_app_*.apk
+    asset_name: attendance_app_1.0.apk
+    asset_content_type: application/vnd.android.package-archive
